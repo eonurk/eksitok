@@ -7,46 +7,19 @@ export function useEksiArticles() {
 	const [error, setError] = useState(false);
 	const [page, setPage] = useState(1);
 
-	// Development-friendly CORS proxies
-	const DEV_CORS_PROXIES = [
-		"https://cors-anywhere.herokuapp.com/",
-		"https://thingproxy.freeboard.io/fetch/",
-	];
-
-	// Production CORS proxies
-	const PROD_CORS_PROXIES = [
-		"https://api.allorigins.win/raw?url=",
-		"https://api.codetabs.com/v1/proxy?quest=",
-		"https://proxy.cors.sh/",
-	];
-
-	const CORS_PROXIES = import.meta.env.DEV
-		? DEV_CORS_PROXIES
-		: PROD_CORS_PROXIES;
-
-	const fetchWithFallback = async (
-		url: string,
-		proxyIndex = 0
-	): Promise<Response> => {
-		if (proxyIndex >= CORS_PROXIES.length) {
-			throw new Error("All proxies failed");
-		}
-
+	const fetchArticles = useCallback(async () => {
 		try {
-			const proxyUrl = CORS_PROXIES[proxyIndex] + encodeURIComponent(url);
-			console.log(
-				`Trying proxy ${proxyIndex + 1}/${CORS_PROXIES.length}:`,
-				proxyUrl
-			);
+			setLoading(true);
+			setError(false);
 
-			const response = await fetch(proxyUrl, {
+			// Using corsProxy.io which is more reliable and doesn't require API keys
+			const CORS_PROXY = "https://corsproxy.io/?";
+			const url = `https://eksiseyler.com/Home/PartialLoadMore?PageNumber=${page}&CategoryId=0&ChannelId=NaN`;
+
+			console.log("Fetching articles for page:", page);
+			const response = await fetch(CORS_PROXY + encodeURIComponent(url), {
 				headers: {
 					Accept: "text/html,application/xhtml+xml,application/xml",
-					"x-requested-with": "XMLHttpRequest",
-					// Add origin header for development
-					...(import.meta.env.DEV && {
-						Origin: window.location.origin,
-					}),
 				},
 			});
 
@@ -54,23 +27,6 @@ export function useEksiArticles() {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
 
-			return response;
-		} catch (error) {
-			console.error(`Proxy ${CORS_PROXIES[proxyIndex]} failed:`, error);
-			// Add delay before trying next proxy to avoid rate limits
-			await new Promise((resolve) => setTimeout(resolve, 1000));
-			return fetchWithFallback(url, proxyIndex + 1);
-		}
-	};
-
-	const fetchArticles = useCallback(async () => {
-		try {
-			setLoading(true);
-			setError(false);
-			const url = `https://eksiseyler.com/Home/PartialLoadMore?PageNumber=${page}&CategoryId=0&ChannelId=NaN`;
-
-			console.log("Fetching articles for page:", page);
-			const response = await fetchWithFallback(url);
 			const html = await response.text();
 
 			const parser = new DOMParser();
