@@ -5,14 +5,24 @@ export function useEksiArticles() {
 	const [articles, setArticles] = useState<EksiArticle[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [page, setPage] = useState(1);
+	const [error, setError] = useState(false);
 
 	const fetchArticles = useCallback(async () => {
 		try {
 			setLoading(true);
-			const CORS_PROXY = "https://corsproxy.io/?";
+			const CORS_PROXY = "https://api.allorigins.win/raw?url=";
 			const url = `https://eksiseyler.com/Home/PartialLoadMore?PageNumber=${page}&CategoryId=0&ChannelId=NaN`;
 
-			const response = await fetch(CORS_PROXY + encodeURIComponent(url));
+			const response = await fetch(CORS_PROXY + encodeURIComponent(url), {
+				headers: {
+					Accept: "text/html,application/xhtml+xml,application/xml",
+				},
+			});
+
+			if (!response.ok) {
+				throw new Error("Network response was not ok");
+			}
+
 			const html = await response.text();
 
 			const parser = new DOMParser();
@@ -68,10 +78,11 @@ export function useEksiArticles() {
 			setPage((p) => p + 1);
 		} catch (error) {
 			console.error("Error fetching articles:", error);
+			setError(true);
 		} finally {
 			setLoading(false);
 		}
 	}, [page]);
 
-	return { articles, loading, fetchArticles };
+	return { articles, loading, fetchArticles, error };
 }
