@@ -7,22 +7,46 @@ export function useEksiArticles() {
 	const [page, setPage] = useState(1);
 	const [error, setError] = useState(false);
 
-	const fetchArticles = useCallback(async () => {
-		try {
-			setLoading(true);
-			const CORS_PROXY = "https://api.allorigins.win/raw?url=";
-			const url = `https://eksiseyler.com/Home/PartialLoadMore?PageNumber=${page}&CategoryId=0&ChannelId=NaN`;
+	const CORS_PROXIES = [
+		"https://corsproxy.io/?",
+		"https://api.codetabs.com/v1/proxy?quest=",
+		"https://api.allorigins.win/raw?url=",
+	];
 
-			const response = await fetch(CORS_PROXY + encodeURIComponent(url), {
+	const fetchWithFallback = async (
+		url: string,
+		proxyIndex = 0
+	): Promise<Response> => {
+		if (proxyIndex >= CORS_PROXIES.length) {
+			throw new Error("All proxies failed");
+		}
+
+		try {
+			const proxyUrl = CORS_PROXIES[proxyIndex] + encodeURIComponent(url);
+			const response = await fetch(proxyUrl, {
 				headers: {
 					Accept: "text/html,application/xhtml+xml,application/xml",
 				},
 			});
 
 			if (!response.ok) {
-				throw new Error("Network response was not ok");
+				throw new Error("Response not OK");
 			}
 
+			return response;
+		} catch (error) {
+			// Try next proxy
+			console.error("Error fetching with proxy:", error);
+			return fetchWithFallback(url, proxyIndex + 1);
+		}
+	};
+
+	const fetchArticles = useCallback(async () => {
+		try {
+			setLoading(true);
+			const url = `https://eksiseyler.com/Home/PartialLoadMore?PageNumber=${page}&CategoryId=0&ChannelId=NaN`;
+
+			const response = await fetchWithFallback(url);
 			const html = await response.text();
 
 			const parser = new DOMParser();
