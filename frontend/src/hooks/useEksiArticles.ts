@@ -4,14 +4,25 @@ import { EksiArticle } from "../types";
 export function useEksiArticles() {
 	const [articles, setArticles] = useState<EksiArticle[]>([]);
 	const [loading, setLoading] = useState(false);
-	const [page, setPage] = useState(1);
 	const [error, setError] = useState(false);
+	const [page, setPage] = useState(1);
 
-	const CORS_PROXIES = [
-		"https://corsproxy.io/?",
-		"https://api.codetabs.com/v1/proxy?quest=",
-		"https://api.allorigins.win/raw?url=",
+	// Development-friendly CORS proxies
+	const DEV_CORS_PROXIES = [
+		"https://cors-anywhere.herokuapp.com/",
+		"https://thingproxy.freeboard.io/fetch/",
 	];
+
+	// Production CORS proxies
+	const PROD_CORS_PROXIES = [
+		"https://api.allorigins.win/raw?url=",
+		"https://api.codetabs.com/v1/proxy?quest=",
+		"https://proxy.cors.sh/",
+	];
+
+	const CORS_PROXIES = import.meta.env.DEV
+		? DEV_CORS_PROXIES
+		: PROD_CORS_PROXIES;
 
 	const fetchWithFallback = async (
 		url: string,
@@ -23,20 +34,31 @@ export function useEksiArticles() {
 
 		try {
 			const proxyUrl = CORS_PROXIES[proxyIndex] + encodeURIComponent(url);
+			console.log(
+				`Trying proxy ${proxyIndex + 1}/${CORS_PROXIES.length}:`,
+				proxyUrl
+			);
+
 			const response = await fetch(proxyUrl, {
 				headers: {
 					Accept: "text/html,application/xhtml+xml,application/xml",
+					"x-requested-with": "XMLHttpRequest",
+					// Add origin header for development
+					...(import.meta.env.DEV && {
+						Origin: window.location.origin,
+					}),
 				},
 			});
 
 			if (!response.ok) {
-				throw new Error("Response not OK");
+				throw new Error(`HTTP error! status: ${response.status}`);
 			}
 
 			return response;
 		} catch (error) {
-			// Try next proxy
-			console.error("Error fetching with proxy:", error);
+			console.error(`Proxy ${CORS_PROXIES[proxyIndex]} failed:`, error);
+			// Add delay before trying next proxy to avoid rate limits
+			await new Promise((resolve) => setTimeout(resolve, 1000));
 			return fetchWithFallback(url, proxyIndex + 1);
 		}
 	};
@@ -44,8 +66,10 @@ export function useEksiArticles() {
 	const fetchArticles = useCallback(async () => {
 		try {
 			setLoading(true);
+			setError(false);
 			const url = `https://eksiseyler.com/Home/PartialLoadMore?PageNumber=${page}&CategoryId=0&ChannelId=NaN`;
 
+			console.log("Fetching articles for page:", page);
 			const response = await fetchWithFallback(url);
 			const html = await response.text();
 
@@ -101,7 +125,7 @@ export function useEksiArticles() {
 			setArticles((prev) => [...prev, ...newArticles]);
 			setPage((p) => p + 1);
 		} catch (error) {
-			console.error("Error fetching articles:", error);
+			console.error("Failed to fetch articles:", error);
 			setError(true);
 		} finally {
 			setLoading(false);
