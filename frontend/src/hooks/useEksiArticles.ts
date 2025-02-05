@@ -13,9 +13,10 @@ export function useEksiArticles() {
 			setError(false);
 
 			// Using corsProxy.io which is more reliable and doesn't require API keys
-			const CORS_PROXY = import.meta.env.PROD
-				? "https://api.allorigins.win/raw?url="
-				: "https://corsproxy.io/?";
+			const CORS_PROXY =
+				import.meta.env.VITE_NODE_ENV === "production"
+					? "https://api.allorigins.win/raw?url="
+					: "https://corsproxy.io/?";
 			const url = `https://eksiseyler.com/Home/PartialLoadMore?PageNumber=${page}&CategoryId=0&ChannelId=NaN`;
 
 			console.log("Fetching articles for page:", page);
