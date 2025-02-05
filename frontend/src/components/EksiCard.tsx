@@ -27,18 +27,18 @@ export function EksiCard({ article }: EksiCardProps) {
 			</div>
 
 			{/* Content */}
-			<div className="relative h-full flex flex-col justify-end p-8">
+			<div className="relative h-full flex flex-col justify-end p-8 pb-16">
 				<div className="max-w-3xl">
 					{showCategory && (
-						<span className="text-sm font-medium text-white/90 uppercase mb-4 block">
+						<span className="text-sm font-medium text-white/90 uppercase mb-3 block">
 							{article.category}
 						</span>
 					)}
-					<h1 className="text-4xl font-bold text-white mb-4 leading-tight">
+					<h1 className="text-4xl font-bold text-white mb-3 leading-tight">
 						{article.title}
 					</h1>
 					{article.snippet && (
-						<p className="text-lg text-white/90 mb-6 line-clamp-3">
+						<p className="text-lg text-white/90 mb-4 line-clamp-3">
 							{article.snippet}
 						</p>
 					)}
