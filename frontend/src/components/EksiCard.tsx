@@ -27,7 +27,7 @@ export function EksiCard({ article }: EksiCardProps) {
 			</div>
 
 			{/* Content */}
-			<div className="relative h-full flex flex-col justify-end p-8 pb-16">
+			<div className="relative h-full flex flex-col justify-end p-8 pb-32">
 				<div className="max-w-3xl">
 					{showCategory && (
 						<span className="text-sm font-medium text-white/90 uppercase mb-3 block">
