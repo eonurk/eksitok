@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useLocalization } from "./useLocalization";
-import type { EksiArticle } from "../components/EksiCard";
+import { EksiArticle } from "../types";
 
 const preloadImage = (src: string): Promise<void> => {
 	return new Promise((resolve, reject) => {
